@@ -79,19 +79,21 @@
   }
 
   .tarjeta::before {
-    content: "FERIA";
+    content: "SUCOVI";
     position: absolute;
-    top: 12px;
-    right: -29px;
-    transform: rotate(35deg);
-    background: var(--color-acento);
+    top: 17px;
+    right: -33px;
+    transform: rotate(38deg);
+    background: linear-gradient(135deg, var(--color-acento), #FF8A5C);
     color: white;
     font-family: 'Baloo 2', sans-serif;
     font-size: 12px;
     font-weight: 700;
-    letter-spacing: 1px;
-    padding: 3px 32px;
-    box-shadow: 0 3px 8px rgba(0,0,0,.12);
+    letter-spacing: 1.2px;
+    padding: 4px 36px;
+    box-shadow: 0 3px 8px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.35);
+    border-top: 1px solid rgba(255,255,255,.4);
+    border-bottom: 1px solid rgba(0,0,0,.08);
   }
 
   .logo {
@@ -512,11 +514,22 @@ function renderFormulario() {
       <label class="etiqueta-campo" for="campoNombre">Nombre y apellido</label>
       <input id="campoNombre" type="text" name="nombre" placeholder="Ej: Juan Pérez" required
              maxlength="30" class="input-telefono"
-             oninput="this.value=this.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s]/g,'').slice(0,30)">` : ""}
+             oninput="filtrarNombre(this)">` : ""}
       <button type="submit" id="btnSellar" class="boton-principal">Sellar</button>
     </form>
   `;
   document.getElementById("formSello").addEventListener("submit", onSubmitFormulario);
+}
+
+function filtrarNombre(el) {
+  const inicioCursor = el.selectionStart;
+  const valorOriginal = el.value;
+  const valorLimpio = valorOriginal.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s]/g, "").slice(0, 30);
+  if (valorLimpio === valorOriginal) return;
+  const diferencia = valorOriginal.length - valorLimpio.length;
+  el.value = valorLimpio;
+  const nuevaPos = Math.max(0, (inicioCursor || 0) - diferencia);
+  el.setSelectionRange(nuevaPos, nuevaPos);
 }
 
 async function onSubmitFormulario(ev) {
@@ -594,38 +607,94 @@ function reproducirSonidoAcierto() {
   } catch (e) { /* si el navegador bloquea el audio automático, no pasa nada */ }
 }
 
-// Aplausos generados por código (ruido filtrado en ráfagas cortas), sin
-// depender de ningún archivo de audio externo.
+// Aplausos + un "griterío" de festejo generados por código (ruido filtrado
+// en ráfagas cortas + una nube de tonos breves), sin depender de ningún
+// archivo de audio externo.
 function reproducirAplausos() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const ahora = ctx.currentTime;
-    const duracionTotal = 1.6;
-    const cantidadPalmas = 28;
+    const duracionTotal = 2.0;
+    const cantidadPalmas = 46;
 
+    // --- Palmas: ráfagas de ruido filtrado, más densas al principio ---
     for (let i = 0; i < cantidadPalmas; i++) {
-      const inicio = Math.random() * duracionTotal;
-      const largoBuffer = 0.04;
+      // distribución que concentra más palmas cerca del inicio, como un aplauso real
+      const t = Math.pow(Math.random(), 1.4) * duracionTotal;
+      const largoBuffer = 0.035 + Math.random() * 0.02;
       const buffer = ctx.createBuffer(1, ctx.sampleRate * largoBuffer, ctx.sampleRate);
       const datos = buffer.getChannelData(0);
       for (let j = 0; j < datos.length; j++) {
-        datos[j] = (Math.random() * 2 - 1) * (1 - j / datos.length);
+        datos[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / datos.length, 0.7);
       }
       const fuente = ctx.createBufferSource();
       fuente.buffer = buffer;
 
       const filtro = ctx.createBiquadFilter();
       filtro.type = "bandpass";
-      filtro.frequency.value = 1500 + Math.random() * 2500;
-      filtro.Q.value = 0.7;
+      filtro.frequency.value = 1800 + Math.random() * 2800;
+      filtro.Q.value = 0.9;
 
       const gain = ctx.createGain();
-      const volumen = 0.35 + Math.random() * 0.25;
-      gain.gain.setValueAtTime(volumen, ahora + inicio);
-      gain.gain.exponentialRampToValueAtTime(0.001, ahora + inicio + largoBuffer);
+      const volumen = 0.22 + Math.random() * 0.18;
+      gain.gain.setValueAtTime(volumen, ahora + t);
+      gain.gain.exponentialRampToValueAtTime(0.001, ahora + t + largoBuffer);
 
       fuente.connect(filtro).connect(gain).connect(ctx.destination);
-      fuente.start(ahora + inicio);
+      fuente.start(ahora + t);
+    }
+
+    // --- Griterío de festejo: pequeñas "voces" hechas con osciladores
+    // que suben de tono, superpuestas, simulando gritos/silbidos de alegría ---
+    const cantidadVoces = 5;
+    for (let v = 0; v < cantidadVoces; v++) {
+      const inicioVoz = 0.05 + Math.random() * 0.5;
+      const duracionVoz = 0.5 + Math.random() * 0.6;
+      const frecInicial = 380 + Math.random() * 220;
+      const frecFinal = frecInicial + 260 + Math.random() * 340;
+
+      const osc = ctx.createOscillator();
+      osc.type = Math.random() > 0.5 ? "sawtooth" : "triangle";
+      osc.frequency.setValueAtTime(frecInicial, ahora + inicioVoz);
+      osc.frequency.exponentialRampToValueAtTime(frecFinal, ahora + inicioVoz + duracionVoz * 0.7);
+      osc.frequency.exponentialRampToValueAtTime(frecInicial * 0.85, ahora + inicioVoz + duracionVoz);
+
+      const filtroVoz = ctx.createBiquadFilter();
+      filtroVoz.type = "bandpass";
+      filtroVoz.frequency.value = 1200;
+      filtroVoz.Q.value = 0.6;
+
+      const gainVoz = ctx.createGain();
+      const volumenVoz = 0.05 + Math.random() * 0.04;
+      gainVoz.gain.setValueAtTime(0, ahora + inicioVoz);
+      gainVoz.gain.linearRampToValueAtTime(volumenVoz, ahora + inicioVoz + 0.08);
+      gainVoz.gain.exponentialRampToValueAtTime(0.001, ahora + inicioVoz + duracionVoz);
+
+      osc.connect(filtroVoz).connect(gainVoz).connect(ctx.destination);
+      osc.start(ahora + inicioVoz);
+      osc.stop(ahora + inicioVoz + duracionVoz + 0.05);
+    }
+
+    // --- Un par de "silbidos" cortos entremezclados ---
+    const cantidadSilbidos = 2;
+    for (let s = 0; s < cantidadSilbidos; s++) {
+      const inicioSilbido = 0.3 + Math.random() * 0.8;
+      const duracionSilbido = 0.35 + Math.random() * 0.25;
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      const frecPico = 1800 + Math.random() * 900;
+      osc.frequency.setValueAtTime(frecPico * 0.6, ahora + inicioSilbido);
+      osc.frequency.linearRampToValueAtTime(frecPico, ahora + inicioSilbido + duracionSilbido * 0.4);
+      osc.frequency.linearRampToValueAtTime(frecPico * 0.75, ahora + inicioSilbido + duracionSilbido);
+
+      const gainSilbido = ctx.createGain();
+      gainSilbido.gain.setValueAtTime(0, ahora + inicioSilbido);
+      gainSilbido.gain.linearRampToValueAtTime(0.05, ahora + inicioSilbido + 0.05);
+      gainSilbido.gain.exponentialRampToValueAtTime(0.001, ahora + inicioSilbido + duracionSilbido);
+
+      osc.connect(gainSilbido).connect(ctx.destination);
+      osc.start(ahora + inicioSilbido);
+      osc.stop(ahora + inicioSilbido + duracionSilbido + 0.05);
     }
   } catch (e) { /* si el navegador bloquea el audio automático, no pasa nada */ }
 }
