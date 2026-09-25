@@ -319,6 +319,12 @@
     flex-shrink: 0;
   }
 
+  .pista-cerrar {
+    font-size: 12px;
+    color: #9C97AC;
+    margin-top: 14px;
+  }
+
   p { line-height: 1.4; }
 
   /* ===== PASAPORTE ===== */
@@ -805,6 +811,7 @@ function renderResultado(r) {
   if (r.yaEstabaCompletoAntes) {
     html += renderPasaporte(r.sellos, null);
     html += `<p class="exito">🎉 ${saludo}ya habías completado todo el recorrido. ${mensajeFinal}</p>`;
+    html += `<p class="pista-cerrar">📱 Ya podés cerrar esta pestaña</p>`;
     contenido.innerHTML = html;
     return;
   }
@@ -816,6 +823,7 @@ function renderResultado(r) {
     html += r.anotadoAhora
       ? `<p class="exito exito-principal">🎉 ¡Completaste el recorrido! ${mensajeFinal}</p>`
       : `<p class="exito exito-principal">🎉 ${mensajeFinal}</p>`;
+    html += `<p class="pista-cerrar">📱 Ya podés cerrar esta pestaña</p>`;
   } else {
     const faltan = CONFIG.totalPuntos - r.totalSellos;
     if (faltan === 1) {
@@ -837,6 +845,7 @@ function renderResultado(r) {
         const nombreProximo = nombrePunto(proximoPendiente);
         html += `<p class="proxima-parada">Tu próxima parada es el <b style="font-size:19px;">${nombreProximo}</b>. ¡Vamos por ese QR! ${ICONO_QR}</p>`;
         html += `<p class="ubicacion">${ICONO_UBICACION}${ubic}</p>`;
+        html += `<p class="pista-cerrar">📱 Podés cerrar esta pestaña y escanear el próximo QR cuando quieras</p>`;
       }
     }
   }
