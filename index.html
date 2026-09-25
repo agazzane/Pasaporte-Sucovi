@@ -126,9 +126,31 @@
     .casillero.nuevo { animation: none; }
     .spinner { animation: none; }
   }
+
+  #confetti-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 999;
+  }
+  .confeti {
+    position: absolute;
+    top: -12px;
+    width: 9px;
+    height: 14px;
+    opacity: 0.95;
+    animation-name: caer;
+    animation-timing-function: cubic-bezier(.36,.1,.6,.9);
+    animation-fill-mode: forwards;
+  }
+  @keyframes caer {
+    to { transform: translateY(110vh) rotate(var(--giro)); opacity: 0.9; }
+  }
 </style>
 </head>
 <body>
+  <div id="confetti-overlay"></div>
   <div class="tarjeta" id="tarjeta">
     <img class="logo" id="logo" src="img/logo.jpg" alt="Logo" onerror="this.style.display='none'">
     <div class="barra-superior" id="barraSuperior"></div>
@@ -141,7 +163,7 @@
 /* =========================================================================
  * CONFIGURACIÓN — pegá acá la URL de tu deploy de Apps Script (termina en /exec)
  * ========================================================================= */
-const API_URL = "https://script.google.com/macros/s/AKfycbxQchCtqbJ5gkovFnrD5MRLbNZx0A3aezmSI8Oqcu43IVoTjiYS-yt75M-FkTJX4vlV/exec";
+const API_URL = "PEGA_ACA_TU_URL_DE_APPS_SCRIPT/exec";
 
 /* Imágenes de sello por punto. Poné los archivos en site/img/ con estos
  * nombres, o cambiá las rutas acá. Si un punto no tiene imagen, se muestra
@@ -292,6 +314,65 @@ function reproducirSonidoAcierto() {
   } catch (e) { /* si el navegador bloquea el audio automático, no pasa nada */ }
 }
 
+// Aplausos generados por código (ruido filtrado en ráfagas cortas), sin
+// depender de ningún archivo de audio externo.
+function reproducirAplausos() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ahora = ctx.currentTime;
+    const duracionTotal = 1.6;
+    const cantidadPalmas = 28;
+
+    for (let i = 0; i < cantidadPalmas; i++) {
+      const inicio = Math.random() * duracionTotal;
+      const largoBuffer = 0.04;
+      const buffer = ctx.createBuffer(1, ctx.sampleRate * largoBuffer, ctx.sampleRate);
+      const datos = buffer.getChannelData(0);
+      for (let j = 0; j < datos.length; j++) {
+        datos[j] = (Math.random() * 2 - 1) * (1 - j / datos.length);
+      }
+      const fuente = ctx.createBufferSource();
+      fuente.buffer = buffer;
+
+      const filtro = ctx.createBiquadFilter();
+      filtro.type = "bandpass";
+      filtro.frequency.value = 1500 + Math.random() * 2500;
+      filtro.Q.value = 0.7;
+
+      const gain = ctx.createGain();
+      const volumen = 0.35 + Math.random() * 0.25;
+      gain.gain.setValueAtTime(volumen, ahora + inicio);
+      gain.gain.exponentialRampToValueAtTime(0.001, ahora + inicio + largoBuffer);
+
+      fuente.connect(filtro).connect(gain).connect(ctx.destination);
+      fuente.start(ahora + inicio);
+    }
+  } catch (e) { /* si el navegador bloquea el audio automático, no pasa nada */ }
+}
+
+function lanzarConfeti() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  const overlay = document.getElementById("confetti-overlay");
+  const colores = ["#1B3B6F", "#2E7D32", "#E8702A", "#F4C542", "#D62839"];
+  const cantidad = 70;
+
+  for (let i = 0; i < cantidad; i++) {
+    const pieza = document.createElement("div");
+    pieza.className = "confeti";
+    pieza.style.left = Math.random() * 100 + "vw";
+    pieza.style.background = colores[Math.floor(Math.random() * colores.length)];
+    pieza.style.setProperty("--giro", (Math.random() * 720 - 360) + "deg");
+    const duracion = 2.4 + Math.random() * 1.6;
+    const demora = Math.random() * 0.5;
+    pieza.style.animationDuration = duracion + "s";
+    pieza.style.animationDelay = demora + "s";
+    if (Math.random() > 0.5) pieza.style.borderRadius = "50%";
+    overlay.appendChild(pieza);
+    setTimeout(() => pieza.remove(), (duracion + demora) * 1000 + 200);
+  }
+}
+
 function ocultarEncabezado() {
   document.getElementById("logo").style.display = "none";
   document.getElementById("barraSuperior").style.display = "none";
@@ -336,9 +417,13 @@ function renderResultado(r) {
     return;
   }
 
+  const mensajeFinal = (CONFIG.mensajeFinal && CONFIG.mensajeFinal.trim())
+    ? CONFIG.mensajeFinal.trim()
+    : "Ya estás anotado/a en el sorteo.";
+
   if (r.yaEstabaCompletoAntes) {
     html += renderPasaporte(r.sellos, null);
-    html += `<p class="exito">🎉 ${saludo}ya habías completado todo el recorrido. Ya estás anotado/a en el sorteo.</p>`;
+    html += `<p class="exito">🎉 ${saludo}ya habías completado todo el recorrido. ${mensajeFinal}</p>`;
     contenido.innerHTML = html;
     return;
   }
@@ -349,8 +434,8 @@ function renderResultado(r) {
 
   if (r.completo) {
     html += r.anotadoAhora
-      ? `<p class="exito">🎉 ¡Completaste el recorrido! Ya quedaste anotado/a en el sorteo.</p>`
-      : `<p class="exito">🎉 Ya estás anotado/a en el sorteo.</p>`;
+      ? `<p class="exito">🎉 ¡Completaste el recorrido! ${mensajeFinal}</p>`
+      : `<p class="exito">🎉 ${mensajeFinal}</p>`;
   } else {
     const faltan = CONFIG.totalPuntos - r.totalSellos;
     if (faltan === 1) {
@@ -377,7 +462,13 @@ function renderResultado(r) {
 
   contenido.innerHTML = html;
   ocultarEncabezado();
-  reproducirSonidoAcierto();
+
+  if (r.completo) {
+    lanzarConfeti();
+    reproducirAplausos();
+  } else {
+    reproducirSonidoAcierto();
+  }
 }
 
 function escapeHtml(str) {
