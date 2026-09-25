@@ -419,32 +419,16 @@
     .spinner { animation: none; }
   }
 
-  #confetti-overlay {
+  #fireworksCanvas {
     position: fixed;
     inset: 0;
     pointer-events: none;
-    overflow: hidden;
     z-index: 999;
-  }
-
-  .confeti {
-    position: absolute;
-    top: -12px;
-    width: 9px;
-    height: 14px;
-    opacity: .95;
-    animation-name: caer;
-    animation-timing-function: cubic-bezier(.36,.1,.6,.9);
-    animation-fill-mode: forwards;
-  }
-
-  @keyframes caer {
-    to { transform: translateY(110vh) rotate(var(--giro)); opacity: .9; }
   }
 </style>
 </head>
 <body>
-  <div id="confetti-overlay"></div>
+  <canvas id="fireworksCanvas"></canvas>
   <div class="tarjeta" id="tarjeta">
     <img class="logo" id="logo" src="img/logo.jpg" alt="Logo" onerror="this.style.display='none'">
     <div class="barra-superior" id="barraSuperior"></div>
@@ -652,149 +636,92 @@ function reproducirSonidoError() {
   vibrar([60, 40, 60]);
 }
 
-// Aplausos + un "griterío" de festejo generados por código: una base
-// continua de ruido filtrado que simula el murmullo de un aplauso grupal,
-// más palmas individuales encima, sin depender de ningún archivo de audio
-// externo.
-function reproducirAplausos() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const ahora = ctx.currentTime;
-    const duracionTotal = 2.2;
+// ── FUEGOS ARTIFICIALES (tomado del mapa de stands SUCOVI) ──────────────────
+// 5 explosiones con estela, repartidas por la pantalla, dibujadas sobre un
+// <canvas> a pantalla completa. Se apaga sola a los ~2.6s.
+const FIREWORKS_COLORS = ["#1B3B6F", "#2E7D32", "#E8702A", "#F4C542", "#D62839", "#5e5ce6"];
+let _fireworksRaf = null;
+let _fireworksTimeouts = [];
 
-    // --- Base continua: "murmullo" de aplauso de fondo (ruido rosa filtrado) ---
-    const largoBase = duracionTotal + 0.3;
-    const bufferBase = ctx.createBuffer(1, ctx.sampleRate * largoBase, ctx.sampleRate);
-    const datosBase = bufferBase.getChannelData(0);
-    let ultimo = 0;
-    for (let j = 0; j < datosBase.length; j++) {
-      const blanco = Math.random() * 2 - 1;
-      ultimo = (ultimo + 0.02 * blanco) / 1.02; // suaviza hacia ruido rosa
-      datosBase[j] = ultimo * 3.5;
-    }
-    const fuenteBase = ctx.createBufferSource();
-    fuenteBase.buffer = bufferBase;
+function fireworksEffect() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const canvas = document.getElementById("fireworksCanvas");
+  if (!canvas) return;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const c = canvas.getContext("2d");
+  c.clearRect(0, 0, canvas.width, canvas.height);
 
-    const filtroBase = ctx.createBiquadFilter();
-    filtroBase.type = "bandpass";
-    filtroBase.frequency.value = 2600;
-    filtroBase.Q.value = 0.6;
-
-    const gainBase = ctx.createGain();
-    gainBase.gain.setValueAtTime(0, ahora);
-    gainBase.gain.linearRampToValueAtTime(0.16, ahora + 0.25);
-    gainBase.gain.linearRampToValueAtTime(0.11, ahora + duracionTotal * 0.7);
-    gainBase.gain.linearRampToValueAtTime(0.001, ahora + duracionTotal);
-
-    fuenteBase.connect(filtroBase).connect(gainBase).connect(ctx.destination);
-    fuenteBase.start(ahora);
-    fuenteBase.stop(ahora + largoBase);
-
-    // --- Palmas: ráfagas de ruido filtrado, más densas al principio ---
-    const cantidadPalmas = 70;
-    for (let i = 0; i < cantidadPalmas; i++) {
-      // distribución que concentra más palmas cerca del inicio, como un aplauso real
-      const t = Math.pow(Math.random(), 1.4) * duracionTotal;
-      const largoBuffer = 0.03 + Math.random() * 0.018;
-      const buffer = ctx.createBuffer(1, ctx.sampleRate * largoBuffer, ctx.sampleRate);
-      const datos = buffer.getChannelData(0);
-      for (let j = 0; j < datos.length; j++) {
-        datos[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / datos.length, 0.6);
+  const spots = [[.2, .3], [.8, .25], [.5, .18], [.35, .55], [.65, .5]];
+  let particles = [];
+  spots.forEach((s, i) => {
+    _fireworksTimeouts.push(setTimeout(() => {
+      const x = canvas.width * s[0], y = canvas.height * s[1];
+      for (let k = 0; k < 38; k++) {
+        const a = Math.random() * Math.PI * 2, sp = 2.5 + Math.random() * 5.5;
+        particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, color: FIREWORKS_COLORS[Math.floor(Math.random() * FIREWORKS_COLORS.length)] });
       }
-      const fuente = ctx.createBufferSource();
-      fuente.buffer = buffer;
+    }, i * 280));
+  });
 
-      const filtro = ctx.createBiquadFilter();
-      filtro.type = "bandpass";
-      filtro.frequency.value = 1800 + Math.random() * 3200;
-      filtro.Q.value = 1.1;
-
-      const gain = ctx.createGain();
-      const volumen = 0.16 + Math.random() * 0.16;
-      gain.gain.setValueAtTime(volumen, ahora + t);
-      gain.gain.exponentialRampToValueAtTime(0.001, ahora + t + largoBuffer);
-
-      fuente.connect(filtro).connect(gain).connect(ctx.destination);
-      fuente.start(ahora + t);
+  const t0 = performance.now();
+  function frame(t) {
+    c.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      p.vy += 0.045; p.x += p.vx; p.y += p.vy; p.life -= 0.012;
+      c.globalAlpha = Math.max(p.life, 0);
+      c.fillStyle = p.color;
+      c.beginPath(); c.arc(p.x, p.y, 2.8, 0, Math.PI * 2); c.fill();
+    });
+    c.globalAlpha = 1;
+    particles = particles.filter(p => p.life > 0);
+    if (t - t0 < 2600) {
+      _fireworksRaf = requestAnimationFrame(frame);
+    } else {
+      c.clearRect(0, 0, canvas.width, canvas.height);
     }
-
-    // --- Griterío de festejo: pequeñas "voces" hechas con osciladores
-    // que suben de tono, superpuestas, simulando gritos/silbidos de alegría ---
-    const cantidadVoces = 5;
-    for (let v = 0; v < cantidadVoces; v++) {
-      const inicioVoz = 0.05 + Math.random() * 0.5;
-      const duracionVoz = 0.5 + Math.random() * 0.6;
-      const frecInicial = 380 + Math.random() * 220;
-      const frecFinal = frecInicial + 260 + Math.random() * 340;
-
-      const osc = ctx.createOscillator();
-      osc.type = Math.random() > 0.5 ? "sawtooth" : "triangle";
-      osc.frequency.setValueAtTime(frecInicial, ahora + inicioVoz);
-      osc.frequency.exponentialRampToValueAtTime(frecFinal, ahora + inicioVoz + duracionVoz * 0.7);
-      osc.frequency.exponentialRampToValueAtTime(frecInicial * 0.85, ahora + inicioVoz + duracionVoz);
-
-      const filtroVoz = ctx.createBiquadFilter();
-      filtroVoz.type = "bandpass";
-      filtroVoz.frequency.value = 1200;
-      filtroVoz.Q.value = 0.6;
-
-      const gainVoz = ctx.createGain();
-      const volumenVoz = 0.05 + Math.random() * 0.04;
-      gainVoz.gain.setValueAtTime(0, ahora + inicioVoz);
-      gainVoz.gain.linearRampToValueAtTime(volumenVoz, ahora + inicioVoz + 0.08);
-      gainVoz.gain.exponentialRampToValueAtTime(0.001, ahora + inicioVoz + duracionVoz);
-
-      osc.connect(filtroVoz).connect(gainVoz).connect(ctx.destination);
-      osc.start(ahora + inicioVoz);
-      osc.stop(ahora + inicioVoz + duracionVoz + 0.05);
-    }
-
-    // --- Un par de "silbidos" cortos entremezclados ---
-    const cantidadSilbidos = 2;
-    for (let s = 0; s < cantidadSilbidos; s++) {
-      const inicioSilbido = 0.3 + Math.random() * 0.8;
-      const duracionSilbido = 0.35 + Math.random() * 0.25;
-      const osc = ctx.createOscillator();
-      osc.type = "sine";
-      const frecPico = 1800 + Math.random() * 900;
-      osc.frequency.setValueAtTime(frecPico * 0.6, ahora + inicioSilbido);
-      osc.frequency.linearRampToValueAtTime(frecPico, ahora + inicioSilbido + duracionSilbido * 0.4);
-      osc.frequency.linearRampToValueAtTime(frecPico * 0.75, ahora + inicioSilbido + duracionSilbido);
-
-      const gainSilbido = ctx.createGain();
-      gainSilbido.gain.setValueAtTime(0, ahora + inicioSilbido);
-      gainSilbido.gain.linearRampToValueAtTime(0.05, ahora + inicioSilbido + 0.05);
-      gainSilbido.gain.exponentialRampToValueAtTime(0.001, ahora + inicioSilbido + duracionSilbido);
-
-      osc.connect(gainSilbido).connect(ctx.destination);
-      osc.start(ahora + inicioSilbido);
-      osc.stop(ahora + inicioSilbido + duracionSilbido + 0.05);
-    }
-  } catch (e) { /* si el navegador bloquea el audio automático, no pasa nada */ }
-  vibrar([40, 60, 40, 60, 120]);
+  }
+  _fireworksRaf = requestAnimationFrame(frame);
 }
 
-function lanzarConfeti() {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+function stopFireworksEffect() {
+  if (_fireworksRaf) cancelAnimationFrame(_fireworksRaf);
+  _fireworksRaf = null;
+  _fireworksTimeouts.forEach(clearTimeout);
+  _fireworksTimeouts = [];
+  const canvas = document.getElementById("fireworksCanvas");
+  if (canvas) canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+}
 
-  const overlay = document.getElementById("confetti-overlay");
-  const colores = ["#1B3B6F", "#2E7D32", "#E8702A", "#F4C542", "#D62839"];
-  const cantidad = 70;
-
-  for (let i = 0; i < cantidad; i++) {
-    const pieza = document.createElement("div");
-    pieza.className = "confeti";
-    pieza.style.left = Math.random() * 100 + "vw";
-    pieza.style.background = colores[Math.floor(Math.random() * colores.length)];
-    pieza.style.setProperty("--giro", (Math.random() * 720 - 360) + "deg");
-    const duracion = 2.4 + Math.random() * 1.6;
-    const demora = Math.random() * 0.5;
-    pieza.style.animationDuration = duracion + "s";
-    pieza.style.animationDelay = demora + "s";
-    if (Math.random() > 0.5) pieza.style.borderRadius = "50%";
-    overlay.appendChild(pieza);
-    setTimeout(() => pieza.remove(), (duracion + demora) * 1000 + 200);
+// ── SONIDO DE FUEGOS ARTIFICIALES (mismo helper que el mapa de stands) ──────
+let _successAudioCtx = null;
+function _getSuccessAudioCtx() {
+  if (!_successAudioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    _successAudioCtx = new AC();
   }
+  if (_successAudioCtx.state === "suspended") _successAudioCtx.resume();
+  return _successAudioCtx;
+}
+function _successTone(ctx, freq, start, dur, { type = "sine", gain = 0.2 } = {}) {
+  const osc = ctx.createOscillator();
+  const g   = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, start);
+  g.gain.setValueAtTime(0, start);
+  g.gain.linearRampToValueAtTime(gain, start + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+  osc.connect(g).connect(ctx.destination);
+  osc.start(start);
+  osc.stop(start + dur + 0.02);
+}
+function playFireworksSound() {
+  const ctx = _getSuccessAudioCtx();
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const freqs = [1800, 2400, 3000, 2100, 2700];
+  freqs.forEach((f, i) => _successTone(ctx, f, t + i * 0.28, 0.35, { type: "square", gain: 0.06 }));
 }
 
 function ocultarEncabezado() {
@@ -896,7 +823,9 @@ function renderResultado(r) {
   ocultarEncabezado();
 
   if (r.completo) {
-    reproducirAplausos();
+    fireworksEffect();
+    playFireworksSound();
+    vibrar([100, 150, 60, 150, 100, 150, 60, 150, 100]);
   } else {
     reproducirSonidoAcierto();
   }
