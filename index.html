@@ -84,29 +84,36 @@
     top: 17px;
     right: -33px;
     transform: rotate(38deg);
-    background: linear-gradient(135deg, var(--color-acento), #FF8A5C);
-    color: white;
+    background: #F1F2F1;
+    color: #24243A;
     font-family: 'Baloo 2', sans-serif;
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 1.2px;
     padding: 4px 36px;
-    box-shadow: 0 3px 8px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.35);
-    border-top: 1px solid rgba(255,255,255,.4);
-    border-bottom: 1px solid rgba(0,0,0,.08);
+    box-shadow: 0 3px 8px rgba(0,0,0,.16);
+    border-top: 3px solid #009246;
+    border-bottom: 3px solid #CE2B37;
+  }
+
+  .logo-envoltorio {
+    width: 116px;
+    height: 116px;
+    border-radius: 50%;
+    margin: 2px auto 16px;
+    padding: 4px;
+    background: conic-gradient(var(--color-primario), var(--color-acento), var(--color-amarillo), var(--color-secundario), var(--color-primario));
+    box-shadow: 0 5px 0 rgba(91,61,245,.16), 0 9px 22px rgba(36,36,58,.18);
   }
 
   .logo {
-    width: 106px;
-    height: 106px;
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
     object-fit: cover;
-    margin: 2px auto 16px;
     display: block;
     background: white;
     border: 5px solid white;
-    outline: 3px solid var(--color-primario);
-    box-shadow: 0 5px 0 rgba(91,61,245,.16), 0 9px 22px rgba(36,36,58,.18);
   }
 
   .barra-superior {
@@ -417,7 +424,7 @@
 
   @media (max-width: 380px) {
     .tarjeta { padding: 28px 16px 26px; }
-    .logo { width: 92px; height: 92px; }
+    .logo-envoltorio { width: 100px; height: 100px; }
     h2 { font-size: 26px; }
     .pasaporte { gap: 7px; padding-left: 8px; padding-right: 8px; }
   }
@@ -431,7 +438,7 @@
     position: absolute;
     bottom: 8px;
     right: 12px;
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 700;
     color: #C9C3DC;
     letter-spacing: .3px;
@@ -449,7 +456,9 @@
 <body>
   <canvas id="fireworksCanvas"></canvas>
   <div class="tarjeta" id="tarjeta">
-    <img class="logo" id="logo" src="img/logo.jpg" alt="Logo" onerror="this.style.display='none'">
+    <div class="logo-envoltorio" id="logoEnvoltorio">
+      <img class="logo" id="logo" src="img/logo.jpg" alt="Logo" onerror="this.parentElement.style.display='none'">
+    </div>
     <div class="barra-superior" id="barraSuperior"></div>
     <div id="contenido">
       <p class="subtitulo">Cargando...</p>
@@ -466,7 +475,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxQchCtqbJ5gkovFnrD5MRL
 /* Número de versión de la página. Se muestra chiquito en la pantalla del
  * Punto 1 (abajo a la derecha de la tarjeta). Cambialo acá con cada
  * actualización que subas. */
-const APP_VERSION = "V1.2";
+const APP_VERSION = "V1.3";
 
 /* Imágenes de sello por punto. Poné los archivos en site/img/ con estos
  * nombres, o cambiá las rutas acá. Si un punto no tiene imagen, se muestra
@@ -478,7 +487,7 @@ const IMAGENES_SELLO = {
   4: "img/sello-4.jpg"
 };
 
-const ICONO_UBICACION = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"><path fill="#FF2D2D" d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.72 11.34 7.15 11.72a1.25 1.25 0 0 0 1.7 0C13.28 21.34 20 15.25 20 10c0-4.42-3.58-8-8-8z"></path><circle cx="12" cy="10" r="3.3" fill="#ffffff"></circle></svg>`;
+const ICONO_UBICACION = `<svg xmlns="http://www.w3.org/2000/svg" width="39" height="39" viewBox="0 0 24 24"><path fill="#FF2D2D" d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.72 11.34 7.15 11.72a1.25 1.25 0 0 0 1.7 0C13.28 21.34 20 15.25 20 10c0-4.42-3.58-8-8-8z"></path><circle cx="12" cy="10" r="3.3" fill="#ffffff"></circle></svg>`;
 
 const ICONO_QR = `<svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" style="flex-shrink:0;vertical-align:-4px;margin-right:6px;"><rect x="2" y="2" width="8" height="8" rx="1.3" fill="none" stroke="#5B3DF5" stroke-width="2"></rect><rect x="5" y="5" width="2" height="2" fill="#5B3DF5"></rect><rect x="14" y="2" width="8" height="8" rx="1.3" fill="none" stroke="#5B3DF5" stroke-width="2"></rect><rect x="17" y="5" width="2" height="2" fill="#5B3DF5"></rect><rect x="2" y="14" width="8" height="8" rx="1.3" fill="none" stroke="#5B3DF5" stroke-width="2"></rect><rect x="5" y="17" width="2" height="2" fill="#5B3DF5"></rect><rect x="14" y="14" width="3" height="3" fill="#5B3DF5"></rect><rect x="19" y="14" width="3" height="3" fill="#5B3DF5"></rect><rect x="14" y="19" width="3" height="3" fill="#5B3DF5"></rect><rect x="19" y="19" width="3" height="3" fill="#5B3DF5"></rect></svg>`;
 
@@ -546,7 +555,7 @@ function renderFormulario() {
   const versionTag = document.getElementById("versionTag");
   if (versionTag) {
     versionTag.textContent = APP_VERSION;
-    versionTag.style.display = esPrimerPunto ? "block" : "none";
+    versionTag.style.display = "block";
   }
 }
 
@@ -758,13 +767,13 @@ function playFireworksSound() {
 }
 
 function ocultarEncabezado() {
-  document.getElementById("logo").style.display = "none";
+  document.getElementById("logoEnvoltorio").style.display = "none";
   document.getElementById("barraSuperior").style.display = "none";
 }
 
 function renderResultado(r) {
   const versionTagEl = document.getElementById("versionTag");
-  if (versionTagEl) versionTagEl.style.display = "none";
+  if (versionTagEl) versionTagEl.style.display = "block";
   const nombreActual = nombrePunto(punto);
   const nombreCorto = primerNombre(r.nombre);
   const saludo = nombreCorto ? (nombreCorto + ", ") : "";
@@ -779,7 +788,7 @@ function renderResultado(r) {
     if (r.motivo === "debe_empezar_por_1") {
       html += `<p class="aviso">🚀 ¡Epa! Todavía no arrancaste tu pasaporte. Empezá por el <b>${nombrePunto(1)}</b> para sumar tu primer sello</p>${lineaUbicacion}`;
     } else if (r.motivo === "ya_tenia_este_punto") {
-      html += `<p class="aviso">${saludo}¡Ese ya lo tenés guardado! 😄<br>Seguí para el <b>${nombrePendiente}</b></p>${lineaUbicacion}`;
+      html += `<p class="aviso" style="font-size:17px;">${saludo}¡Ese ya lo tenés guardado! 😄<br>Seguí para el <b>${nombrePendiente}</b></p>${lineaUbicacion}`;
     } else if (r.motivo === "orden_incorrecto") {
       html += `<p class="aviso">${saludo}¡Epa, en orden! Primero el <b>${nombrePendiente}</b> y después seguimos</p>${lineaUbicacion}`;
     }
@@ -826,7 +835,7 @@ function renderResultado(r) {
       const ubic = mensajeUbicacion(proximoPendiente);
       if (ubic) {
         const nombreProximo = nombrePunto(proximoPendiente);
-        html += `<p class="proxima-parada">${ICONO_QR}Tu próxima parada es el <b style="font-size:19px;">${nombreProximo}</b>. ¡Vamos por ese QR!</p>`;
+        html += `<p class="proxima-parada">Tu próxima parada es el <b style="font-size:19px;">${nombreProximo}</b>. ¡Vamos por ese QR! ${ICONO_QR}</p>`;
         html += `<p class="ubicacion">${ICONO_UBICACION}${ubic}</p>`;
       }
     }
