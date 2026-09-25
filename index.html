@@ -2,591 +2,389 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Mapa de Contratos – Feria Abril 2026</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Pasaporte Feria del Colegio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --firmado:   #22c55e; --firmado-t:   #14532d;
-    --pendiente: #facc15; --pend-t:      #713f12;
-    --bg:        #f0f4f8; --font:        'DM Sans', system-ui, sans-serif;
+    --color-primario: #1B3B6F;
+    --color-secundario: #2E7D32;
+    --color-acento: #E8702A;
+    --color-fondo: #F4F6F9;
+    --color-texto: #22303F;
   }
-  body { font-family: var(--font); background: var(--bg); min-height: 100vh; color: #1e293b; }
-
-  header { background: #1e293b; color: white; padding: 8px 12px 6px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
-  header h1 { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
-  header p  { font-size: 12px; opacity: .65; margin-top: 1px; }
-
-  .stats { display: flex; gap: 8px; padding: 10px 14px; background: #1e293b; border-top: 1px solid rgba(255,255,255,.1); overflow-x: auto; scrollbar-width: none; }
-  .stats::-webkit-scrollbar { display: none; }
-  .stat-pill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.1); border-radius: 20px; padding: 5px 12px; white-space: nowrap; font-size: 12px; color: white; }
-  .stat-pill .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .stat-pill strong { font-weight: 700; margin-left: 2px; }
-
-  .tabs { display: flex; background: white; border-bottom: 2px solid #e2e8f0; position: sticky; top: 70px; z-index: 90; }
-  .tab-btn { flex: 1; padding: 12px 8px; font-size: 14px; font-weight: 600; font-family: var(--font); border: none; background: none; cursor: pointer; color: #64748b; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .2s; }
-  .tab-btn.active { color: #1e293b; border-bottom-color: #1e293b; }
-
-  .filters { padding: 6px 10px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; background: white; border-bottom: 1px solid #e2e8f0; }
-  .filters::-webkit-scrollbar { display: none; }
-  .filter-btn { padding: 6px 14px; border-radius: 20px; border: 2px solid #e2e8f0; font-size: 13px; font-weight: 600; font-family: var(--font); cursor: pointer; white-space: nowrap; background: white; color: #64748b; transition: all .15s; }
-  .filter-btn.active { border-color: #1e293b; color: #1e293b; background: #f8fafc; }
-  .filter-btn[data-f="FIRMADO"].active   { border-color: var(--firmado);   color: var(--firmado-t);   background: #f0fdf4; }
-  .filter-btn[data-f="PENDIENTE"].active { border-color: #ca8a04;          color: var(--pend-t);      background: #fefce8; }
-
-  .search-wrap { padding: 6px 10px; background: white; border-bottom: 1px solid #e2e8f0; }
-  .search-wrap input { width: 100%; padding: 9px 14px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-family: var(--font); outline: none; transition: border-color .2s; }
-  .search-wrap input:focus { border-color: #94a3b8; }
-
-  .floor { display: none; }
-  .floor.active { display: block; }
-
-  .zoom-controls { position: fixed; bottom: 24px; right: 16px; z-index: 150; display: flex; flex-direction: column; gap: 6px; }
-  .zoom-btn { width: 44px; height: 44px; border-radius: 50%; background: #1e293b; color: white; border: none; font-size: 22px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.35); font-family: var(--font); user-select: none; -webkit-tap-highlight-color: transparent; }
-  .zoom-btn:active { transform: scale(.92); }
-  .zoom-level { text-align: center; font-size: 11px; color: #64748b; font-weight: 600; }
-
-  .map-scroll { overflow: auto; padding: 6px; -webkit-overflow-scrolling: touch; }
-  .map-inner { transform-origin: top left; width: max-content; transition: transform 0.15s ease; position: relative; }
-  .map-bg { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 0; }
-  .grid { display: grid; gap: 2px; grid-auto-rows: 30px; position: relative; z-index: 1; }
-
-  .stand { border-radius: 7px; padding: 3px; cursor: pointer; transition: transform .15s, box-shadow .15s; border: 2px solid transparent; width: 136px; height: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; position: relative; user-select: none; }
-  .stand:active { transform: scale(.95); }
-  .stand[data-e="FIRMADO"]   { background: var(--firmado);   color: var(--firmado-t); box-shadow: 0 1px 4px rgba(0,0,0,.15); }
-  .stand[data-e="PENDIENTE"] { background: var(--pendiente); color: var(--pend-t);    box-shadow: 0 1px 4px rgba(0,0,0,.15); }
-  .stand.dimmed      { opacity: .18; pointer-events: none; }
-  .stand.highlighted { box-shadow: 0 0 0 3px #1e293b; transform: scale(1.06); z-index: 5; }
-  .stand .snum { font-size: 24px; font-weight: 700; line-height: 1; letter-spacing: -.5px; }
-  .stand .snombre { font-size: 11px; font-weight: 500; line-height: 1.2; margin-top: 3px; max-width: 100%; overflow: hidden; opacity: .85; }
-  .empty { min-width: 136px; min-height: 62px; background: transparent; }
-
-  .legend { padding: 12px 14px 20px; display: flex; flex-wrap: wrap; gap: 8px; }
-  .leg-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #475569; font-weight: 500; }
-  .leg-dot { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
-
-  /* ── MODAL ── */
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 200; align-items: flex-end; justify-content: center; }
-  .modal-overlay.open { display: flex; }
-  .modal { background: white; border-radius: 18px 18px 0 0; padding: 20px 20px 36px; width: 100%; max-width: 480px; animation: slideUp .25s ease; position: relative; }
-  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-  .modal-handle { width: 38px; height: 4px; background: #e2e8f0; border-radius: 2px; margin: 0 auto 16px; }
-  .modal-close { position: absolute; top: 18px; right: 18px; background: #f1f5f9; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #64748b; font-family: var(--font); }
-
-  .modal-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-bottom: 12px; }
-  .modal-badge[data-e="FIRMADO"]   { background: var(--firmado);   color: var(--firmado-t); }
-  .modal-badge[data-e="PENDIENTE"] { background: var(--pendiente); color: var(--pend-t); }
-
-  .modal h2       { font-size: 28px; font-weight: 700; }
-  .modal-nombre   { font-size: 16px; font-weight: 700; color: #1e293b; margin-top: 8px; }
-  .modal-rubro    { font-size: 14px; color: #475569; margin-top: 4px; font-weight: 500; }
-
-  /* Fecha y link cuando está firmado */
-  .modal-firmado-info { margin-top: 14px; padding: 12px 14px; background: #f0fdf4; border-radius: 10px; border: 1.5px solid #bbf7d0; }
-  .modal-firmado-info .fi-label { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
-  .modal-firmado-info .fi-fecha { font-size: 15px; font-weight: 700; color: #15803d; margin-top: 2px; }
-  .modal-firmado-info .fi-link  { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; font-weight: 600; color: #1d4ed8; text-decoration: none; }
-  .modal-firmado-info .fi-link:active { opacity: .7; }
-
-  /* Área de carga de documento */
-  .upload-area {
-    margin-top: 18px; border: 2px dashed #e2e8f0; border-radius: 12px;
-    padding: 20px; text-align: center; cursor: pointer;
-    transition: border-color .2s, background .2s;
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Quicksand', -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    background: var(--color-fondo);
+    color: var(--color-texto);
+    margin: 0;
+    padding: 20px 14px;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  .upload-area:hover { border-color: #94a3b8; background: #f8fafc; }
-  .upload-area.has-file { border-color: var(--firmado); background: #f0fdf4; }
-  .upload-area .ua-icon { font-size: 32px; margin-bottom: 8px; }
-  .upload-area .ua-text { font-size: 14px; color: #64748b; font-weight: 500; }
-  .upload-area .ua-filename { font-size: 13px; color: #15803d; font-weight: 700; margin-top: 4px; }
-  #fileInput { display: none; }
-
-  .btn-firmar {
-    margin-top: 14px; width: 100%; padding: 14px;
-    border-radius: 12px; border: none;
-    font-size: 15px; font-weight: 700; font-family: var(--font);
-    cursor: pointer; background: var(--firmado); color: var(--firmado-t);
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    transition: all .2s;
+  .tarjeta {
+    background: #fff;
+    border-radius: 20px;
+    border: 3px solid var(--color-primario);
+    box-shadow: 0 0 0 6px #EAF1FF, 0 6px 20px rgba(27,59,111,0.15);
+    padding: 36px 24px 40px;
+    max-width: 440px;
+    width: 100%;
+    text-align: center;
   }
-  .btn-firmar:disabled { opacity: .5; cursor: not-allowed; }
-  .btn-firmar:active { transform: scale(.97); }
+  .logo {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .barra-superior {
+    height: 6px;
+    width: 70px;
+    background: linear-gradient(90deg, var(--color-primario), var(--color-secundario), var(--color-acento));
+    border-radius: 4px;
+    margin: 0 auto 22px;
+  }
+  h2 {
+    margin: 0 0 6px;
+    color: var(--color-primario);
+    font-size: 27px;
+    font-family: 'Baloo 2', 'Quicksand', sans-serif;
+    font-weight: 700;
+  }
+  .subtitulo { color: #667; font-size: 16px; margin-top: 4px; }
+  .etiqueta-campo {
+    display: block; text-align: left; font-size: 13px; font-weight: 600;
+    color: #667; margin: 14px 0 4px;
+  }
+  .input-telefono {
+    font-size: 20px; padding: 14px 16px; width: 100%;
+    border: 1.5px solid #D5DCE5; border-radius: 12px; margin: 10px 0;
+    outline: none; display: block; font-family: inherit;
+  }
+  .input-telefono:focus { border-color: var(--color-primario); }
+  .boton-principal {
+    font-family: 'Baloo 2', 'Quicksand', sans-serif;
+    font-size: 19px; font-weight: 700; padding: 14px 32px; border: none;
+    border-radius: 12px; background: var(--color-primario); color: #fff;
+    cursor: pointer; width: 100%; max-width: 260px; margin-top: 12px;
+  }
+  .boton-principal:active { opacity: 0.85; }
+  .boton-principal:disabled { opacity: 0.75; cursor: default; }
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.5); border-top-color: #fff;
+    border-radius: 50%; vertical-align: -2px; margin-right: 6px;
+    animation: girar 0.7s linear infinite;
+  }
+  @keyframes girar { to { transform: rotate(360deg); } }
+  .boton-secundario {
+    font-size: 15px; font-weight: 600; padding: 10px 20px;
+    border: 1.5px solid var(--color-primario); border-radius: 10px;
+    background: #fff; color: var(--color-primario); cursor: pointer; margin-top: 10px;
+  }
+  .aviso { background: #FDF1E7; color: #9C4B14; padding: 10px 12px; border-radius: 10px; font-size: 15px; }
+  .exito { background: #EAF6EC; color: #1E5A28; padding: 10px 12px; border-radius: 10px; font-size: 15px; }
+  .error-carga { background: #FDECEA; color: #9C2A1E; padding: 10px 12px; border-radius: 10px; font-size: 14px; text-align: left; white-space: pre-wrap; }
+  .contador { font-size: 15px; color: var(--color-primario); }
+  .ubicacion {
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    color: #555; font-size: 14px; background: #F0F3F7; padding: 8px 10px; border-radius: 8px;
+  }
+  .ubicacion svg { flex-shrink: 0; color: #D62839; }
+  p { line-height: 1.4; }
 
-  .btn-spinner { width: 18px; height: 18px; border: 3px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin .6s linear infinite; display: none; }
-  .btn-firmar.loading .btn-spinner { display: inline-block; }
-  .btn-firmar.loading .btn-text    { display: none; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes stampIn {
+    0%   { transform: scale(3) rotate(-25deg); opacity: 0; }
+    55%  { transform: scale(0.9) rotate(-6deg); opacity: 1; }
+    75%  { transform: scale(1.08) rotate(-11deg); }
+    100% { transform: scale(1) rotate(-9deg); opacity: 1; }
+  }
 
-  .modal-toast { margin-top: 12px; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; text-align: center; display: none; }
-  .modal-toast.ok  { background: #f0fdf4; color: #15803d; display: block; }
-  .modal-toast.err { background: #fee2e2; color: #b91c1c; display: block; }
+  .pasaporte { display: grid; gap: 10px; margin: 4px 0 20px; }
+  .casillero {
+    aspect-ratio: 1 / 1; border-radius: 14px; display: flex;
+    align-items: center; justify-content: center; overflow: hidden;
+  }
+  .casillero.vacio {
+    border: 2px dashed #C5CEDA; background: #FAFBFC; color: #B0BAC8;
+    font-size: 24px; font-weight: 700;
+  }
+  .casillero.lleno { border: 2px solid var(--color-secundario); background: #EAF6EC; }
+  .casillero.lleno img { width: 100%; height: 100%; object-fit: contain; }
+  .casillero .check { font-size: 30px; font-weight: 800; color: var(--color-secundario); }
+  .casillero.nuevo { animation: stampIn 0.55s cubic-bezier(.36,1.7,.4,1) both; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .casillero.nuevo { animation: none; }
+    .spinner { animation: none; }
+  }
 </style>
 </head>
 <body>
-
-<header>
-  <h1>📋 Mapa de Contratos — Feria Abril 2026</h1>
-  <p id="subtitle">Sincronizando datos...</p>
-</header>
-
-<div class="stats" id="statsBar">
-  <div class="stat-pill"><div class="dot" style="background:#64748b"></div>Cargando... <strong></strong></div>
-</div>
-
-<div class="tabs">
-  <button class="tab-btn active" onclick="switchFloor('pb', this)">🏠 Planta Baja</button>
-  <button class="tab-btn"        onclick="switchFloor('pa', this)">🏢 Planta Alta</button>
-</div>
-
-<div class="search-wrap">
-  <input type="search" id="searchInput" placeholder="Buscar por número o feriante..." oninput="applyFilters()">
-</div>
-
-<div class="filters">
-  <button class="filter-btn active" data-f="todos"     onclick="setFilter('todos', this)">Todos</button>
-  <button class="filter-btn"        data-f="FIRMADO"   onclick="setFilter('FIRMADO', this)">✅ Firmado</button>
-  <button class="filter-btn"        data-f="PENDIENTE" onclick="setFilter('PENDIENTE', this)">⏳ Pendiente</button>
-</div>
-
-<!-- PLANTA BAJA -->
-<div class="floor active" id="floor-pb">
-  <div class="map-scroll"><div class="map-inner">
-    <svg class="map-bg" width="2050" height="1900" xmlns="http://www.w3.org/2000/svg">
-      <defs><style>.bg-label{font-family:'DM Sans',sans-serif;font-weight:700;}</style></defs>
-      <rect x="140" y="0" width="2050" height="290" fill="#bfdbfe" rx="6"/>
-      <rect x="0" y="70" width="138" height="400" fill="#60a5fa" rx="6"/>
-      <text class="bg-label" x="230" y="270" text-anchor="middle" fill="white" font-size="18" transform="rotate(-90,69,70)">ESCENARIO</text>
-      <rect x="0" y="0" width="138" height="196" fill="#cbd5e1" rx="4"/>
-      <text class="bg-label" x="69" y="100" text-anchor="middle" fill="#475569" font-size="15">ACCESO</text>
-      <text class="bg-label" x="69" y="116" text-anchor="middle" fill="#475569" font-size="15">PLANTA ALTA</text>
-      <text class="bg-label" x="69" y="132" text-anchor="middle" fill="#475569" font-size="13">(escalera)</text>
-      <text class="bg-label" x="1050" y="140" text-anchor="middle" fill="#1e3a5f" font-size="28">PATIO CUBIERTO</text>
-      <rect x="138" y="290" width="2050" height="1380" fill="#f0c8d8" rx="4"/>
-      <text class="bg-label" x="1120" y="700" text-anchor="middle" fill="#1e3a5f" font-size="28">PATIO</text>
-      <text class="bg-label" x="1120" y="750" text-anchor="middle" fill="#1e3a5f" font-size="28">DESCUBIERTO</text>
-      <rect x="0" y="196" width="138" height="1500" fill="#d4a0b5" rx="4"/>
-      <rect x="0" y="1550" width="138" height="130" fill="#cbd5e1" rx="4"/>
-      <text class="bg-label" x="69" y="1600" text-anchor="middle" fill="#475569" font-size="15">ACCESO</text>
-      <text class="bg-label" x="69" y="1616" text-anchor="middle" fill="#475569" font-size="15">PLANTA ALTA</text>
-      <text class="bg-label" x="69" y="1632" text-anchor="middle" fill="#475569" font-size="13">(escalera)</text>
-      <rect x="850" y="1220" width="1200" height="800" fill="#666666" rx="6"/>
-      <rect x="0" y="1670" width="620" height="300" fill="#bbf7d0" rx="4"/>
-      <rect x="1630" y="520" width="180" height="80" fill="#475569" rx="5"/><text class="bg-label" x="1725" y="570" text-anchor="middle" fill="white" font-size="28">MESA</text>
-      <rect x="1630" y="640" width="180" height="80" fill="#475569" rx="5"/><text class="bg-label" x="1725" y="690" text-anchor="middle" fill="white" font-size="28">MESA</text>
-      <rect x="1630" y="760" width="180" height="80" fill="#475569" rx="5"/><text class="bg-label" x="1725" y="810" text-anchor="middle" fill="white" font-size="28">MESA</text>
-      <rect x="1630" y="880" width="180" height="80" fill="#475569" rx="5"/><text class="bg-label" x="1725" y="930" text-anchor="middle" fill="white" font-size="28">MESA</text>
-      <rect x="1920" y="320" width="130" height="100" fill="#1e3a5f" rx="5"/><text class="bg-label" x="1980" y="380" text-anchor="middle" fill="white" font-size="28">DJ</text>
-      <rect x="1580" y="1150" width="165" height="64" fill="#64748b" rx="5"/><text class="bg-label" x="1660" y="1190" text-anchor="middle" fill="white" font-size="24">CAJAS</text>
-      <rect x="1800" y="980" width="300" height="240" fill="#1e3a5f" rx="5"/>
-      <text class="bg-label" x="1920" y="1080" text-anchor="middle" fill="white" font-size="24">STAND</text>
-      <text class="bg-label" x="1920" y="1130" text-anchor="middle" fill="white" font-size="24">VENTAS</text>
-      <text class="bg-label" x="1870" y="320" text-anchor="middle" fill="#1e3a5f" font-size="18">INGRESO</text>
-      <text class="bg-label" x="350"  y="320" text-anchor="middle" fill="#1e3a5f" font-size="18">INGRESO</text>
-      <text class="bg-label" x="1190" y="320" text-anchor="middle" fill="#1e3a5f" font-size="18">INGRESO</text>
-      <text class="bg-label" x="740"  y="1660" text-anchor="middle" fill="#1e3a5f" font-size="18">INGRESO</text>
-      <text class="bg-label" x="740"  y="1890" text-anchor="middle" fill="#065f46" font-size="24">ENTRADA</text>
-      <text x="740" y="1750" text-anchor="middle" fill="#065f46" font-size="40">↕</text>
-    </svg>
-    <div class="grid" id="grid-pb"></div>
-  </div></div>
-</div>
-
-<!-- PLANTA ALTA -->
-<div class="floor" id="floor-pa">
-  <div class="map-scroll"><div class="map-inner">
-    <svg class="map-bg" width="1900" height="1750" xmlns="http://www.w3.org/2000/svg">
-      <defs><style>.bg-label{font-family:'DM Sans',sans-serif;font-weight:700;}</style></defs>
-      <rect x="0" y="0" width="1900" height="1750" fill="#666666" rx="6"/>
-      <rect x="100" y="0" width="135" height="300" fill="#bfdbfe" rx="6"/>
-      <rect x="0" y="0" width="250" height="1400" fill="#bfdbfe" rx="4"/>
-      <text class="bg-label" x="210" y="800" text-anchor="middle" fill="#1e3a5f" font-size="40" transform="rotate(-90,200,800)">SEMICUBIERTO</text>
-      <rect x="250" y="170" width="1200" height="180" fill="#e0f2fe" rx="4"/>
-      <text class="bg-label" x="800" y="320" text-anchor="middle" fill="#1e3a5f" font-size="28">GALERIA ANCHA</text>
-      <text x="1400" y="320" text-anchor="middle" fill="#1e3a5f" font-size="60">⇔</text>
-      <text x="310"  y="320" text-anchor="middle" fill="#1e3a5f" font-size="60">⇔</text>
-      <rect x="250" y="1130" width="730" height="660" fill="#c4b5fd" rx="4"/>
-      <text class="bg-label" x="650" y="1450" text-anchor="middle" fill="#3b0764" font-size="30">PRIMER NIVEL</text>
-      <text class="bg-label" x="650" y="1500" text-anchor="middle" fill="#3b0764" font-size="30">COMEDOR</text>
-      <text x="930" y="1430" text-anchor="middle" fill="#3b0764" font-size="60">⇔</text>
-      <text x="930" y="1680" text-anchor="middle" fill="#3b0764" font-size="60">⇔</text>
-      <text x="320" y="1500" text-anchor="middle" fill="#3b0764" font-size="60">⇔</text>
-      <rect x="980" y="1130" width="650" height="675" fill="#9478eb" rx="4"/>
-      <text class="bg-label" x="1300" y="1450" text-anchor="middle" fill="#3b0764" font-size="30">SEGUNDO NIVEL</text>
-      <text class="bg-label" x="1300" y="1500" text-anchor="middle" fill="#3b0764" font-size="30">COMEDOR</text>
-      <text x="900" y="1600" text-anchor="middle" fill="#3b0764" font-size="50">⇔</text>
-      <rect x="1450" y="0" width="460" height="350" fill="#a78bfa" rx="4"/>
-      <text class="bg-label" x="1600" y="250" text-anchor="middle" fill="#3b0764" font-size="28">PATIO</text>
-      <text class="bg-label" x="1600" y="290" text-anchor="middle" fill="#3b0764" font-size="28">DESCUBIERTO</text>
-      <rect x="0" y="0" width="250" height="170" fill="#cbd5e1" rx="4"/>
-      <text class="bg-label" x="120" y="60"  text-anchor="middle" fill="#475569" font-size="18">ACCESO</text>
-      <text class="bg-label" x="120" y="80"  text-anchor="middle" fill="#475569" font-size="18">PTA. BAJA</text>
-      <text class="bg-label" x="120" y="100" text-anchor="middle" fill="#475569" font-size="16">(escalera)</text>
-      <rect x="0" y="1400" width="250" height="350" fill="#cbd5e1" rx="4"/>
-      <text class="bg-label" x="120" y="1450" text-anchor="middle" fill="#475569" font-size="18">ACCESO</text>
-      <text class="bg-label" x="120" y="1480" text-anchor="middle" fill="#475569" font-size="18">PTA. BAJA</text>
-      <text class="bg-label" x="120" y="1510" text-anchor="middle" fill="#475569" font-size="16">(escalera)</text>
-      <text x="50" y="730" text-anchor="middle" fill="#475569" font-size="22">⇔</text>
-    </svg>
-    <div class="grid" id="grid-pa"></div>
-  </div></div>
-</div>
-
-<div class="legend">
-  <div class="leg-item"><div class="leg-dot" style="background:var(--firmado)"></div> Firmado</div>
-  <div class="leg-item"><div class="leg-dot" style="background:var(--pendiente)"></div> Pendiente</div>
-</div>
-
-<div class="zoom-controls">
-  <button class="zoom-btn" onclick="cambiarZoom(1)">+</button>
-  <div class="zoom-level" id="zoomLabel">60%</div>
-  <button class="zoom-btn" onclick="cambiarZoom(-1)">−</button>
-</div>
-
-<!-- INPUT FILE oculto -->
-<input type="file" id="fileInput" accept=".pdf" onchange="archivoSeleccionado(this)">
-
-<!-- MODAL -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-handle"></div>
-    <button class="modal-close" onclick="closeModal()">×</button>
-    <div class="modal-badge" id="modalBadge" data-e=""></div>
-    <h2 id="modalNum"></h2>
-    <div class="modal-nombre" id="modalNombre"></div>
-    <div class="modal-rubro"  id="modalRubro"></div>
-
-    <!-- Info cuando está FIRMADO -->
-    <div id="modalFirmadoInfo" class="modal-firmado-info" style="display:none">
-      <div class="fi-label">Fecha de firma</div>
-      <div class="fi-fecha" id="modalFecha"></div>
-      <a id="modalLink" class="fi-link" href="#" target="_blank">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        Ver documento
-      </a>
+  <div class="tarjeta" id="tarjeta">
+    <img class="logo" id="logo" src="img/logo.jpg" alt="Logo" onerror="this.style.display='none'">
+    <div class="barra-superior" id="barraSuperior"></div>
+    <div id="contenido">
+      <p class="subtitulo">Cargando...</p>
     </div>
-
-    <!-- Área de carga cuando está PENDIENTE -->
-    <div id="modalUpload" style="display:none">
-      <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
-        <div class="ua-icon">📎</div>
-        <div class="ua-text">Tocá para adjuntar el contrato firmado</div>
-        <div class="ua-filename" id="uploadFilename" style="display:none"></div>
-      </div>
-      <button class="btn-firmar" id="btnFirmar" onclick="firmarContrato()" disabled>
-        <div class="btn-spinner"></div>
-        <span class="btn-text">✅ Confirmar firma</span>
-      </button>
-      <div class="modal-toast" id="modalToast"></div>
-    </div>
-
   </div>
-</div>
 
 <script>
-document.addEventListener('touchstart', e => { if(e.touches.length>1) e.preventDefault(); }, {passive:false});
-document.addEventListener('touchmove',  e => { if(e.touches.length>1) e.preventDefault(); }, {passive:false});
-let lastTap = 0;
-document.addEventListener('touchend', e => { const now=Date.now(); if(now-lastTap<300) e.preventDefault(); lastTap=now; }, {passive:false});
+/* =========================================================================
+ * CONFIGURACIÓN — pegá acá la URL de tu deploy de Apps Script (termina en /exec)
+ * ========================================================================= */
+const API_URL = "https://script.google.com/macros/s/AKfycbxQchCtqbJ5gkovFnrD5MRLbNZx0A3aezmSI8Oqcu43IVoTjiYS-yt75M-FkTJX4vlV/exec";
 
-// 👇 Reemplazá con la URL de tu Apps Script de contratos
-const API_URL = "https://script.google.com/macros/s/AKfycbx4tzK--1yvxGHfjU98QC4Mfubq77O5bLWlTJ7QW_nxAiU0zO6WodCe1N09gHeotOYR9Q/exec";
+/* Imágenes de sello por punto. Poné los archivos en site/img/ con estos
+ * nombres, o cambiá las rutas acá. Si un punto no tiene imagen, se muestra
+ * un ✓ verde en su casillero. */
+const IMAGENES_SELLO = {
+  1: "img/sello-1.jpg",
+  2: "img/sello-2.jpg",
+  3: "img/sello-3.jpg",
+  4: "img/sello-4.jpg"
+};
 
-let FULL_DATA     = {};
-let currentFloor  = 'pb';
-let currentFilter = 'todos';
-let modalStandId  = null;
-let archivoBase64 = null;
-let archivoNombre = null;
-let archivoTipo   = null;
+const ICONO_UBICACION = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
 
-// ── LOAD ─────────────────────────────────────────────────────────────────────
-async function load() {
+const contenido = document.getElementById("contenido");
+const tarjeta = document.getElementById("tarjeta");
+const params = new URLSearchParams(window.location.search);
+const punto = parseInt(params.get("punto"), 10);
+
+let CONFIG = null;
+
+init();
+
+async function init() {
+  if (!punto || punto < 1) {
+    contenido.innerHTML = `<p>Este código QR no es válido. Avisá a un organizador.</p>`;
+    return;
+  }
+
   try {
-    FULL_DATA = await callScript({});
-    buildGrid('grid-pb', FULL_DATA.pbData);
-    buildGrid('grid-pa', FULL_DATA.paData);
-    buildStats();
-    const total = Object.keys(FULL_DATA.pbData).length + Object.keys(FULL_DATA.paData).length;
-    document.getElementById('subtitle').textContent = `${total} stands · Planta Baja y Planta Alta`;
-    aplicarZoom();
-  } catch(e) {
-    document.getElementById('subtitle').textContent = 'Error al cargar datos';
-  }
-}
+    const res = await fetch(`${API_URL}?action=config`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "No se pudo cargar la configuración.");
+    CONFIG = data;
 
-// ── BUILD GRID ───────────────────────────────────────────────────────────────
-function buildGrid(gridId, data) {
-  const el      = document.getElementById(gridId);
-  const rows    = Object.values(data).map(s => s.r);
-  const colsArr = Object.values(data).map(s => s.c);
-  const minR = Math.min(...rows), maxR = Math.max(...rows);
-  const minC = Math.min(...colsArr), maxC = Math.max(...colsArr);
-  el.style.gridTemplateColumns = `repeat(${maxC - minC + 1}, 68px)`;
-
-  const idx = {};
-  Object.entries(data).forEach(([num, s]) => { idx[`${s.r},${s.c}`] = { num, ...s }; });
-
-  let html = '';
-  for (let r = minR; r <= maxR; r++) {
-    for (let c = minC; c <= maxC; c++) {
-      const s = idx[`${r},${c}`];
-      if (s) {
-        const nombreTrunc = s.n ? (s.n.length > 18 ? s.n.slice(0,16) + '…' : s.n) : '';
-        html += `<div class="stand"
-          data-num="${s.num}"
-          data-e="${s.estado}"
-          data-n="${(s.n||'').replace(/"/g,'&quot;')}"
-          data-rb="${(s.rb||'').replace(/"/g,'&quot;')}"
-          onclick="openModal('${s.num}')">
-          <span class="snum">${s.num}</span>
-          ${nombreTrunc ? `<span class="snombre">${nombreTrunc}</span>` : ''}
-        </div>`;
-      } else {
-        html += `<div class="empty"></div>`;
-      }
+    if (punto > CONFIG.totalPuntos) {
+      contenido.innerHTML = `<p>Este código QR no es válido. Avisá a un organizador.</p>`;
+      return;
     }
+
+    renderFormulario();
+  } catch (err) {
+    contenido.innerHTML = `<p class="error-carga">No se pudo conectar con el servidor.\n\n${escapeHtml(err.message)}</p>
+      <button type="button" class="boton-secundario" onclick="location.reload()">Reintentar</button>`;
   }
-  el.innerHTML = html;
 }
 
-// ── STATS ────────────────────────────────────────────────────────────────────
-function buildStats() {
-  const all = [...Object.values(FULL_DATA.pbData||{}), ...Object.values(FULL_DATA.paData||{})];
-  const firmados   = all.filter(s => s.estado === 'FIRMADO').length;
-  const pendientes = all.filter(s => s.estado === 'PENDIENTE').length;
-  const pct = all.length > 0 ? Math.round(firmados / all.length * 100) : 0;
-  document.getElementById('statsBar').innerHTML = `
-    <div class="stat-pill"><div class="dot" style="background:#64748b"></div>Total <strong>${all.length}</strong></div>
-    <div class="stat-pill"><div class="dot" style="background:var(--firmado)"></div>Firmado <strong>${firmados}</strong></div>
-    <div class="stat-pill"><div class="dot" style="background:var(--pendiente)"></div>Pendiente <strong>${pendientes}</strong></div>
-    <div class="stat-pill"><div class="dot" style="background:#64748b"></div>Avance <strong>${pct}%</strong></div>
+function nombrePunto(p) {
+  return (CONFIG.nombresPuntos && CONFIG.nombresPuntos[p]) || ("Punto " + p);
+}
+
+function mensajeUbicacion(p) {
+  return (CONFIG.mensajesUbicacion && CONFIG.mensajesUbicacion[p]) || "";
+}
+
+function renderFormulario() {
+  const esPrimerPunto = punto === 1;
+  contenido.innerHTML = `
+    <h2>${nombrePunto(punto)}</h2>
+    <p class="subtitulo">${esPrimerPunto ? "Ingresá tus datos para empezar tu pasaporte." : "Ingresá tu número de teléfono para sellar tu pasaporte."}</p>
+    <form id="formSello">
+      <label class="etiqueta-campo" for="campoTelefono">Número de teléfono</label>
+      <input id="campoTelefono" type="tel" name="telefono" placeholder="Ej: 1122334455" required
+             inputmode="numeric" pattern="[0-9]*" maxlength="12" class="input-telefono"
+             oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,12)">
+      ${esPrimerPunto ? `
+      <label class="etiqueta-campo" for="campoNombre">Nombre y apellido</label>
+      <input id="campoNombre" type="text" name="nombre" placeholder="Ej: Juan Pérez" required
+             maxlength="30" class="input-telefono"
+             oninput="this.value=this.value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\\s]/g,'').slice(0,30)">` : ""}
+      <button type="submit" id="btnSellar" class="boton-principal">Sellar</button>
+    </form>
   `;
+  document.getElementById("formSello").addEventListener("submit", onSubmitFormulario);
 }
 
-// ── SWITCH FLOOR ─────────────────────────────────────────────────────────────
-function switchFloor(f, btn) {
-  currentFloor = f;
-  document.querySelectorAll('.floor').forEach(el => el.classList.remove('active'));
-  document.getElementById(`floor-${f}`).classList.add('active');
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  applyFilters();
-  setTimeout(() => { aplicarZoom(); }, 50);
-}
+async function onSubmitFormulario(ev) {
+  ev.preventDefault();
+  const telefono = document.getElementById("campoTelefono").value.trim();
+  const nombreEl = document.getElementById("campoNombre");
+  const nombre = nombreEl ? nombreEl.value.trim() : "";
 
-// ── FILTROS ───────────────────────────────────────────────────────────────────
-function setFilter(f, btn) {
-  currentFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  applyFilters();
-}
-
-function applyFilters() {
-  const q      = document.getElementById('searchInput').value.toLowerCase().trim();
-  const gridId = currentFloor === 'pb' ? 'grid-pb' : 'grid-pa';
-  document.querySelectorAll(`#${gridId} .stand`).forEach(el => {
-    const matchF = currentFilter === 'todos' || el.dataset.e === currentFilter;
-    const matchS = !q || el.dataset.num.includes(q) || (el.dataset.n||'').toLowerCase().includes(q);
-    if (matchF && matchS) {
-      el.classList.remove('dimmed');
-      if (q) el.classList.add('highlighted'); else el.classList.remove('highlighted');
-    } else {
-      el.classList.add('dimmed'); el.classList.remove('highlighted');
-    }
-  });
-}
-
-// ── MODAL ────────────────────────────────────────────────────────────────────
-function openModal(id) {
-  modalStandId  = id;
-  archivoBase64 = null;
-  archivoNombre = null;
-  archivoTipo   = null;
-
-  const data   = (FULL_DATA.pbData||{})[id] || (FULL_DATA.paData||{})[id] || {};
-  const estado = data.estado || 'PENDIENTE';
-
-  const badge = document.getElementById('modalBadge');
-  badge.setAttribute('data-e', estado);
-  badge.textContent = estado === 'FIRMADO' ? '✅ Firmado' : '⏳ Pendiente';
-
-  document.getElementById('modalNum').textContent    = `Stand ${id}`;
-  document.getElementById('modalNombre').textContent = data.n  || '';
-  document.getElementById('modalRubro').textContent  = data.rb || '';
-  document.getElementById('modalToast').className    = 'modal-toast';
-
-  // Reset upload area
-  const uploadArea = document.getElementById('uploadArea');
-  uploadArea.className = 'upload-area';
-  document.getElementById('uploadFilename').style.display = 'none';
-  document.getElementById('uploadFilename').textContent   = '';
-  document.getElementById('btnFirmar').disabled = true;
-  document.getElementById('fileInput').value = '';
-
-  if (estado === 'FIRMADO') {
-    document.getElementById('modalFirmadoInfo').style.display = 'block';
-    document.getElementById('modalUpload').style.display      = 'none';
-    document.getElementById('modalFecha').textContent         = data.fecha || '';
-    const linkEl = document.getElementById('modalLink');
-    if (data.link) {
-      linkEl.href = data.link;
-      linkEl.style.display = 'inline-flex';
-    } else {
-      linkEl.style.display = 'none';
-    }
-  } else {
-    document.getElementById('modalFirmadoInfo').style.display = 'none';
-    document.getElementById('modalUpload').style.display      = 'block';
-  }
-
-  document.getElementById('modalOverlay').classList.add('open');
-}
-
-function closeModal(e) {
-  if (!e || e.target === document.getElementById('modalOverlay') || e.currentTarget.tagName === 'BUTTON') {
-    document.getElementById('modalOverlay').classList.remove('open');
-  }
-}
-
-// ── ARCHIVO SELECCIONADO ──────────────────────────────────────────────────────
-function archivoSeleccionado(input) {
-  const file = input.files[0];
-  if (!file) return;
-
-  archivoNombre = file.name;
-  archivoTipo   = file.type;
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    // Extraer solo el base64 sin el prefijo "data:...;base64,"
-    archivoBase64 = e.target.result.split(',')[1];
-
-    const uploadArea = document.getElementById('uploadArea');
-    uploadArea.className = 'upload-area has-file';
-    const fnEl = document.getElementById('uploadFilename');
-    fnEl.textContent   = file.name;
-    fnEl.style.display = 'block';
-    document.getElementById('btnFirmar').disabled = false;
-  };
-  reader.readAsDataURL(file);
-}
-
-// ── FIRMAR CONTRATO ───────────────────────────────────────────────────────────
-async function firmarContrato() {
-  if (!archivoBase64) return;
-
-  const btn   = document.getElementById('btnFirmar');
-  const toast = document.getElementById('modalToast');
-  btn.classList.add('loading');
-  btn.disabled  = true;
-  toast.className = 'modal-toast';
+  const btn = document.getElementById("btnSellar");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Procesando...`;
 
   try {
-    // Enviar base64 en chunks para evitar 413 (URL demasiado larga)
-    const CHUNK_SIZE = 3000; // 3000 chars base64url → URL ~3000 chars → no hay redirect de Google
-    const totalChunks = Math.ceil(archivoBase64.length / CHUNK_SIZE);
-    const uploadId = Date.now() + '_' + modalStandId;
-    const sep = API_URL.includes('?') ? '&' : '?';
+    const qs = new URLSearchParams({ action: "sellar", punto: String(punto), telefono });
+    if (nombre) qs.set("nombre", nombre);
 
-    // Subir chunks
-    for (let i = 0; i < totalChunks; i++) {
-      const chunk = archivoBase64.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-      // Convertir base64 a base64url: no necesita %XX, no expande la URL
-      const chunkSafe = chunk.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-      const url = API_URL + sep + 'accion=chunk'
-        + '&uploadId='    + encodeURIComponent(uploadId)
-        + '&chunkIndex='  + i
-        + '&totalChunks=' + totalChunks
-        + '&fileData='    + chunkSafe;
-      const r = await fetch(url);
-      const d = await r.json();
-      if (!d.ok) throw new Error('Error en chunk ' + i + ': ' + (d.error || ''));
-      toast.textContent = `⏳ Subiendo... ${Math.round((i+1)/totalChunks*100)}%`;
-      toast.className   = 'modal-toast';
-      await new Promise(res => setTimeout(res, 10)); // fuerza repintado
-    }
-
-    // Confirmar el archivo completo
-    const url = API_URL + sep + 'accion=firmar'
-      + '&uploadId='  + encodeURIComponent(uploadId)
-      + '&standId='   + encodeURIComponent(modalStandId)
-      + '&fileName='  + encodeURIComponent(archivoNombre)
-      + '&fileType='  + encodeURIComponent(archivoTipo);
-    const res  = await fetch(url);
+    const res = await fetch(`${API_URL}?${qs.toString()}`);
     const data = await res.json();
 
-    if (data.ok) {
-      // Actualizar datos locales
-      const floorData = (FULL_DATA.pbData||{})[modalStandId]
-        ? FULL_DATA.pbData : FULL_DATA.paData;
-      if (floorData[modalStandId]) {
-        floorData[modalStandId].estado = 'FIRMADO';
-        floorData[modalStandId].link   = data.link;
-      }
+    if (data.error) throw new Error(data.error);
 
-      // Actualizar celda en el grid
-      const cell = document.querySelector(`.stand[data-num="${modalStandId}"]`);
-      if (cell) cell.setAttribute('data-e', 'FIRMADO');
-
-      buildStats();
-
-      toast.textContent = '✔ Contrato registrado correctamente';
-      toast.className   = 'modal-toast ok';
-
-      // Cerrar modal después de 2 segundos
-      setTimeout(() => { closeModal(); }, 2000);
-
-    } else {
-      throw new Error(data.error || 'Error desconocido');
-    }
-  } catch(err) {
-    toast.textContent = '✖ Error: ' + err.message;
-    toast.className   = 'modal-toast err';
-  } finally {
-    btn.classList.remove('loading');
-    btn.disabled = false;
+    renderResultado(data);
+  } catch (err) {
+    contenido.innerHTML = `<p class="error-carga">No se pudo procesar el sello.\n\n${escapeHtml(err.message)}</p>
+      <button type="button" class="boton-secundario" onclick="location.reload()">Volver a intentar</button>`;
   }
 }
 
-// ── ZOOM ─────────────────────────────────────────────────────────────────────
-const ZOOM_STEPS = [0.4, 0.5, 0.6, 0.75, 0.9, 1.1, 1.3];
-let zoomIdx = 2;
-function aplicarZoom() {
-  const scale = ZOOM_STEPS[zoomIdx];
-  document.querySelectorAll('.map-inner').forEach(inner => { inner.style.transform = `scale(${scale})`; });
-  document.getElementById('zoomLabel').textContent = Math.round(scale * 100) + '%';
-  fixMapSize(); centerMap();
-}
-function cambiarZoom(dir) { zoomIdx = Math.max(0, Math.min(ZOOM_STEPS.length-1, zoomIdx+dir)); aplicarZoom(); }
-function fixMapSize() {
-  const scale = ZOOM_STEPS[zoomIdx];
-  document.querySelectorAll('.map-inner').forEach(inner => {
-    const bg = inner.querySelector('.map-bg');
-    const w  = Math.max(inner.scrollWidth,  bg ? parseInt(bg.getAttribute('width'))  : 0);
-    const h  = Math.max(inner.scrollHeight, bg ? parseInt(bg.getAttribute('height')) : 0);
-    inner.style.width = (w*scale)+'px'; inner.style.height = (h*scale)+'px';
-  });
-}
-function centerMap() {
-  const scale = ZOOM_STEPS[zoomIdx];
-  document.querySelectorAll('.map-scroll').forEach(container => {
-    const inner = container.querySelector('.map-inner'); if (!inner) return;
-    const cw = inner.scrollWidth * scale;
-    inner.style.marginLeft = cw < container.clientWidth ? (container.clientWidth-cw)/2+'px' : '0px';
-  });
+function primerNombre(nombreCompleto) {
+  if (!nombreCompleto) return "";
+  return String(nombreCompleto).trim().split(/\s+/)[0];
 }
 
-// ── callScript: mismo patrón que el script de feria que funciona ─────────────
-async function callScript(params) {
-  const sep = API_URL.includes('?') ? '&' : '?';
-  const qs  = new URLSearchParams(params);
-  const res = await fetch(API_URL + sep + qs.toString());
-  return res.json();
+function elegirAlAzar(opciones) {
+  return opciones[Math.floor(Math.random() * opciones.length)];
 }
 
-load();
+function renderPasaporte(sellos, puntoNuevo) {
+  let html = `<div class="pasaporte" style="grid-template-columns:repeat(${CONFIG.totalPuntos},1fr);">`;
+  sellos.forEach((lleno, i) => {
+    const p = i + 1;
+    if (lleno) {
+      const esNuevo = p === puntoNuevo;
+      const src = IMAGENES_SELLO[p];
+      const contenidoCasillero = src
+        ? `<img src="${src}" alt="Sello ${p}" onerror="this.parentElement.innerHTML='<span class=&quot;check&quot;>✓</span>'">`
+        : `<span class="check">✓</span>`;
+      html += `<div class="casillero lleno${esNuevo ? " nuevo" : ""}">${contenidoCasillero}</div>`;
+    } else {
+      html += `<div class="casillero vacio"><span>${p}</span></div>`;
+    }
+  });
+  return html + `</div>`;
+}
+
+function reproducirSonidoAcierto() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ahora = ctx.currentTime;
+    function nota(frecuencia, inicio, duracion, volumen) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(frecuencia, ahora + inicio);
+      gain.gain.setValueAtTime(0, ahora + inicio);
+      gain.gain.linearRampToValueAtTime(volumen, ahora + inicio + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ahora + inicio + duracion);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(ahora + inicio);
+      osc.stop(ahora + inicio + duracion + 0.05);
+    }
+    nota(523.25, 0.00, 0.12, 0.18);
+    nota(659.25, 0.09, 0.12, 0.18);
+    nota(783.99, 0.18, 0.20, 0.20);
+  } catch (e) { /* si el navegador bloquea el audio automático, no pasa nada */ }
+}
+
+function ocultarEncabezado() {
+  document.getElementById("logo").style.display = "none";
+  document.getElementById("barraSuperior").style.display = "none";
+}
+
+function renderResultado(r) {
+  const nombreActual = nombrePunto(punto);
+  const nombreCorto = primerNombre(r.nombre);
+  const saludo = nombreCorto ? (nombreCorto + ", ") : "";
+  let html = "";
+
+  if (!r.ok) {
+    html += renderPasaporte(r.sellos, null);
+    const nombrePendiente = nombrePunto(r.puntoPendiente);
+    const ubic = mensajeUbicacion(r.puntoPendiente);
+    const lineaUbicacion = ubic ? `<p class="ubicacion">${ICONO_UBICACION}${ubic}</p>` : "";
+
+    if (r.motivo === "debe_empezar_por_1") {
+      const opciones = [
+        `¡Epa! Todavía no arrancaste tu pasaporte. Empezá por el <b>${nombrePunto(1)}</b> para sumar tu primer sello 🚀`,
+        `Che, para jugar necesitás arrancar por el <b>${nombrePunto(1)}</b> 😉`,
+        `¡Casi! Tu aventura empieza en el <b>${nombrePunto(1)}</b>`
+      ];
+      html += `<p class="aviso">${elegirAlAzar(opciones)}</p>${lineaUbicacion}`;
+    } else if (r.motivo === "ya_tenia_este_punto") {
+      const opciones = [
+        `¡Ese ya lo tenés guardado! 😄 Seguí para el <b>${nombrePendiente}</b>`,
+        `¡Recontra sellado! Ahora vamos por el <b>${nombrePendiente}</b>`,
+        `Ya está esa, tranqui. Te toca el <b>${nombrePendiente}</b>`
+      ];
+      html += `<p class="aviso">${saludo}${elegirAlAzar(opciones)}</p>${lineaUbicacion}`;
+    } else if (r.motivo === "orden_incorrecto") {
+      const opciones = [
+        `¡Casi! Pero primero tenés que pasar por el <b>${nombrePendiente}</b>`,
+        `Un pasito antes: te espera el <b>${nombrePendiente}</b>`,
+        `¡Epa, en orden! Primero el <b>${nombrePendiente}</b> y después seguimos`
+      ];
+      html += `<p class="aviso">${saludo}${elegirAlAzar(opciones)}</p>${lineaUbicacion}`;
+    }
+    html += `<button type="button" class="boton-secundario" onclick="location.reload()">Volver a intentar</button>`;
+    contenido.innerHTML = html;
+    return;
+  }
+
+  if (r.yaEstabaCompletoAntes) {
+    html += renderPasaporte(r.sellos, null);
+    html += `<p class="exito">🎉 ${saludo}ya habías completado todo el recorrido. Ya estás anotado/a en el sorteo.</p>`;
+    contenido.innerHTML = html;
+    return;
+  }
+
+  html += renderPasaporte(r.sellos, r.puntoRecienGuardado);
+  html += `<p class="exito">✅ ${saludo}¡sello de <b>${nombreActual}</b> registrado!</p>`;
+  html += `<p class="contador">Llevás <b>${r.totalSellos} de ${CONFIG.totalPuntos}</b> sellos.</p>`;
+
+  if (r.completo) {
+    html += r.anotadoAhora
+      ? `<p class="exito">🎉 ¡Completaste el recorrido! Ya quedaste anotado/a en el sorteo.</p>`
+      : `<p class="exito">🎉 Ya estás anotado/a en el sorteo.</p>`;
+  } else {
+    const faltan = CONFIG.totalPuntos - r.totalSellos;
+    if (faltan === 1) {
+      html += `<p>¡Último esfuerzo! Un sello más y estás adentro del sorteo 🎯</p>`;
+    } else {
+      const opciones = [
+        "¡Genial! Vas con todo 💪",
+        "¡Vamos que ya casi lo tenés!",
+        "¡Excelente! Un sello más en el bolsillo",
+        "¡Así se hace! Seguí para adelante",
+        "¡Buenísimo! Cada vez más cerca del sorteo"
+      ];
+      html += `<p>${elegirAlAzar(opciones)}</p>`;
+    }
+    const proximoPendiente = r.puntoRecienGuardado ? r.puntoRecienGuardado + 1 : null;
+    if (proximoPendiente && proximoPendiente <= CONFIG.totalPuntos) {
+      const ubic = mensajeUbicacion(proximoPendiente);
+      if (ubic) {
+        html += `<p>Tu próxima parada: <b>${nombrePunto(proximoPendiente)}</b></p>`;
+        html += `<p class="ubicacion">${ICONO_UBICACION}${ubic}</p>`;
+      }
+    }
+  }
+
+  contenido.innerHTML = html;
+  ocultarEncabezado();
+  reproducirSonidoAcierto();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
 </script>
 </body>
 </html>
