@@ -481,7 +481,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxQchCtqbJ5gkovFnrD5MRL
 /* Número de versión de la página. Se muestra chiquito en la pantalla del
  * Punto 1 (abajo a la derecha de la tarjeta). Cambialo acá con cada
  * actualización que subas. */
-const APP_VERSION = "V1.3";
+const APP_VERSION = "V1.4";
 
 /* Imágenes de sello por punto. Poné los archivos en site/img/ con estos
  * nombres, o cambiá las rutas acá. Si un punto no tiene imagen, se muestra
@@ -825,19 +825,6 @@ function renderResultado(r) {
       : `<p class="exito exito-principal">🎉 ${mensajeFinal}</p>`;
     html += `<p class="pista-cerrar">📱 Ya podés cerrar esta pestaña</p>`;
   } else {
-    const faltan = CONFIG.totalPuntos - r.totalSellos;
-    if (faltan === 1) {
-      html += `<p class="animo">Un sello más y estás adentro del sorteo 🎯</p>`;
-    } else {
-      const opciones = [
-        "¡Genial! Vas con todo 💪",
-        "¡Vamos que ya casi lo tenés!",
-        "¡Excelente! Un sello más en el bolsillo",
-        "¡Así se hace! Seguí para adelante",
-        "¡Buenísimo! Cada vez más cerca del sorteo"
-      ];
-      html += `<p class="animo">${elegirAlAzar(opciones)}</p>`;
-    }
     const proximoPendiente = r.puntoRecienGuardado ? r.puntoRecienGuardado + 1 : null;
     if (proximoPendiente && proximoPendiente <= CONFIG.totalPuntos) {
       const ubic = mensajeUbicacion(proximoPendiente);
