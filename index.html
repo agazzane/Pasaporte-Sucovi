@@ -268,6 +268,13 @@
     color: #3B2B72;
   }
 
+  .proxima-parada {
+    font-size: 17px;
+    font-weight: 600;
+    color: #3B2B72;
+    margin-bottom: 4px;
+  }
+
   .error-carga {
     background: #FFF0EF;
     color: #9C2A1E;
@@ -291,9 +298,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 7px;
     color: #55516A;
-    font-size: 13px;
+    font-size: 15px;
+    font-weight: 600;
     background: #F5F3FA;
     border: 1px solid #E5E0F0;
     padding: 9px 10px;
@@ -470,7 +478,7 @@ const IMAGENES_SELLO = {
   4: "img/sello-4.jpg"
 };
 
-const ICONO_UBICACION = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><path fill="#FF2D2D" d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.72 11.34 7.15 11.72a1.25 1.25 0 0 0 1.7 0C13.28 21.34 20 15.25 20 10c0-4.42-3.58-8-8-8z"></path><circle cx="12" cy="10" r="3.3" fill="#ffffff"></circle></svg>`;
+const ICONO_UBICACION = `<svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24"><path fill="#FF2D2D" d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.72 11.34 7.15 11.72a1.25 1.25 0 0 0 1.7 0C13.28 21.34 20 15.25 20 10c0-4.42-3.58-8-8-8z"></path><circle cx="12" cy="10" r="3.3" fill="#ffffff"></circle></svg>`;
 
 const contenido = document.getElementById("contenido");
 const tarjeta = document.getElementById("tarjeta");
@@ -835,10 +843,10 @@ function renderResultado(r) {
           `🔍 Buscá el QR del <b>${nombreProximo}</b>`,
           `📸 Escaneá el QR de <b>${nombreProximo}</b> y seguí sumando`,
           `🕵️ Misión siguiente: encontrar el QR de <b>${nombreProximo}</b>`,
-          `🚀 ¡A por el QR de <b>${nombreProximo}</b>!`,
+          `🚀 Vamos por el QR del <b>${nombreProximo}</b>`,
           `🧭 Tu próxima parada es el <b>${nombreProximo}</b>. ¡Andá a cazar ese QR!`
         ];
-        html += `<p>${elegirAlAzar(opcionesProximaParada)}</p>`;
+        html += `<p class="proxima-parada">${elegirAlAzar(opcionesProximaParada)}</p>`;
         html += `<p class="ubicacion">${ICONO_UBICACION}${ubic}</p>`;
       }
     }
