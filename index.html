@@ -244,9 +244,9 @@
   }
 
   .aviso {
-    background: #FFF4DF;
-    color: #915A00;
-    border: 1px solid #FFD991;
+    background: #FCEAEA;
+    color: #A31E1E;
+    border: 1px solid #F0B3B3;
   }
 
   .exito {
@@ -855,12 +855,11 @@ function renderResultado(r) {
 
   html += renderPasaporte(r.sellos, r.puntoRecienGuardado);
   html += `<p class="exito exito-principal">✅ ${saludo}¡sello de <b>${nombreActual}</b> registrado!</p>`;
-  html += `<p class="contador">Llevás <b>${r.totalSellos} de ${CONFIG.totalPuntos}</b> sellos.</p>`;
 
   if (r.completo) {
     html += r.anotadoAhora
-      ? `<p class="exito">🎉 ¡Completaste el recorrido! ${mensajeFinal}</p>`
-      : `<p class="exito">🎉 ${mensajeFinal}</p>`;
+      ? `<p class="exito exito-principal">🎉 ¡Completaste el recorrido! ${mensajeFinal}</p>`
+      : `<p class="exito exito-principal">🎉 ${mensajeFinal}</p>`;
   } else {
     const faltan = CONFIG.totalPuntos - r.totalSellos;
     if (faltan === 1) {
@@ -879,7 +878,15 @@ function renderResultado(r) {
     if (proximoPendiente && proximoPendiente <= CONFIG.totalPuntos) {
       const ubic = mensajeUbicacion(proximoPendiente);
       if (ubic) {
-        html += `<p>Tu próxima parada: <b>${nombrePunto(proximoPendiente)}</b></p>`;
+        const nombreProximo = nombrePunto(proximoPendiente);
+        const opcionesProximaParada = [
+          `🔍 Buscá el QR del <b>${nombreProximo}</b>`,
+          `📸 Escaneá el QR de <b>${nombreProximo}</b> y seguí sumando`,
+          `🕵️ Misión siguiente: encontrar el QR de <b>${nombreProximo}</b>`,
+          `🚀 ¡A por el QR de <b>${nombreProximo}</b>!`,
+          `🧭 Tu próxima parada es el <b>${nombreProximo}</b>. ¡Andá a cazar ese QR!`
+        ];
+        html += `<p>${elegirAlAzar(opcionesProximaParada)}</p>`;
         html += `<p class="ubicacion">${ICONO_UBICACION}${ubic}</p>`;
       }
     }
@@ -889,7 +896,6 @@ function renderResultado(r) {
   ocultarEncabezado();
 
   if (r.completo) {
-    lanzarConfeti();
     reproducirAplausos();
   } else {
     reproducirSonidoAcierto();
