@@ -419,6 +419,17 @@
     .spinner { animation: none; }
   }
 
+  .version-tag {
+    position: absolute;
+    bottom: 8px;
+    right: 12px;
+    font-size: 9px;
+    font-weight: 700;
+    color: #C9C3DC;
+    letter-spacing: .3px;
+    pointer-events: none;
+  }
+
   #fireworksCanvas {
     position: fixed;
     inset: 0;
@@ -435,6 +446,7 @@
     <div id="contenido">
       <p class="subtitulo">Cargando...</p>
     </div>
+    <span class="version-tag" id="versionTag" style="display:none"></span>
   </div>
 
 <script>
@@ -442,6 +454,11 @@
  * CONFIGURACIÓN — pegá acá la URL de tu deploy de Apps Script (termina en /exec)
  * ========================================================================= */
 const API_URL = "https://script.google.com/macros/s/AKfycbxQchCtqbJ5gkovFnrD5MRLbNZx0A3aezmSI8Oqcu43IVoTjiYS-yt75M-FkTJX4vlV/exec";
+
+/* Número de versión de la página. Se muestra chiquito en la pantalla del
+ * Punto 1 (abajo a la derecha de la tarjeta). Cambialo acá con cada
+ * actualización que subas. */
+const APP_VERSION = "V1.0";
 
 /* Imágenes de sello por punto. Poné los archivos en site/img/ con estos
  * nombres, o cambiá las rutas acá. Si un punto no tiene imagen, se muestra
@@ -515,6 +532,12 @@ function renderFormulario() {
     </form>
   `;
   document.getElementById("formSello").addEventListener("submit", onSubmitFormulario);
+
+  const versionTag = document.getElementById("versionTag");
+  if (versionTag) {
+    versionTag.textContent = APP_VERSION;
+    versionTag.style.display = esPrimerPunto ? "block" : "none";
+  }
 }
 
 function filtrarNombre(el) {
@@ -730,6 +753,8 @@ function ocultarEncabezado() {
 }
 
 function renderResultado(r) {
+  const versionTagEl = document.getElementById("versionTag");
+  if (versionTagEl) versionTagEl.style.display = "none";
   const nombreActual = nombrePunto(punto);
   const nombreCorto = primerNombre(r.nombre);
   const saludo = nombreCorto ? (nombreCorto + ", ") : "";
@@ -750,7 +775,7 @@ function renderResultado(r) {
       html += `<p class="aviso">${elegirAlAzar(opciones)}</p>${lineaUbicacion}`;
     } else if (r.motivo === "ya_tenia_este_punto") {
       const opciones = [
-        `¡Ese ya lo tenés guardado! 😄 Seguí para el <b>${nombrePendiente}</b>`,
+        `¡Ese ya lo tenés guardado! 😄<br>Seguí para el <b>${nombrePendiente}</b>`,
         `¡Recontra sellado! Ahora vamos por el <b>${nombrePendiente}</b>`,
         `Ya está esa, tranqui. Te toca el <b>${nombrePendiente}</b>`
       ];
