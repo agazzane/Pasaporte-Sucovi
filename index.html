@@ -438,6 +438,7 @@
   @media (prefers-reduced-motion: reduce) {
     .casillero.nuevo { animation: none; }
     .spinner { animation: none; }
+    .loader-qr { animation: none; }
   }
 
   .version-tag {
@@ -457,10 +458,81 @@
     pointer-events: none;
     z-index: 999;
   }
+
+  /* ===== LOADER INICIAL (QR girando) ===== */
+  .loader-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 18px;
+    background: linear-gradient(135deg, var(--color-primario), var(--color-rosa));
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    transition: opacity .35s ease;
+  }
+
+  .loader-overlay.oculto {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .loader-circulo {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,.18);
+  }
+
+  .loader-qr {
+    width: 58px;
+    height: 58px;
+    animation: girarQR 1.6s linear infinite;
+  }
+
+  .loader-qr rect {
+    fill: var(--color-primario);
+  }
+
+  @keyframes girarQR {
+    0%   { transform: rotateY(0deg); }
+    100% { transform: rotateY(360deg); }
+  }
+
+  .loader-texto {
+    color: #fff;
+    font-family: 'Baloo 2', 'Quicksand', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    margin: 0;
+  }
 </style>
 </head>
 <body>
   <canvas id="fireworksCanvas"></canvas>
+
+  <div class="loader-overlay" id="loaderOverlay">
+    <div class="loader-circulo">
+      <svg class="loader-qr" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="8" height="8" rx="1.3"></rect>
+        <rect x="14" y="2" width="8" height="8" rx="1.3"></rect>
+        <rect x="2" y="14" width="8" height="8" rx="1.3"></rect>
+        <rect x="14" y="14" width="3" height="3"></rect>
+        <rect x="19" y="14" width="3" height="3"></rect>
+        <rect x="14" y="19" width="3" height="3"></rect>
+        <rect x="19" y="19" width="3" height="3"></rect>
+      </svg>
+    </div>
+    <p class="loader-texto">Cargando tu pasaporte...</p>
+  </div>
+
   <div class="tarjeta" id="tarjeta">
     <div class="logo-envoltorio" id="logoEnvoltorio">
       <img class="logo" id="logo" src="img/logo.jpg" alt="Logo" onerror="this.parentElement.style.display='none'">
@@ -481,7 +553,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxQchCtqbJ5gkovFnrD5MRL
 /* Número de versión de la página. Se muestra chiquito en la pantalla del
  * Punto 1 (abajo a la derecha de la tarjeta). Cambialo acá con cada
  * actualización que subas. */
-const APP_VERSION = "V1.4";
+const APP_VERSION = "V1.5";
 
 /* Imágenes de sello por punto. Poné los archivos en site/img/ con estos
  * nombres, o cambiá las rutas acá. Si un punto no tiene imagen, se muestra
@@ -492,6 +564,10 @@ const IMAGENES_SELLO = {
   3: "img/sello-3.jpg",
   4: "img/sello-4.jpg"
 };
+
+/* Tiempo mínimo (ms) que se muestra el QR girando antes de pasar al
+ * formulario o al error, aunque la config cargue más rápido. */
+const LOADER_MINIMO_MS = 1000;
 
 const ICONO_UBICACION = `<svg xmlns="http://www.w3.org/2000/svg" width="39" height="39" viewBox="0 0 24 24"><path fill="#FF2D2D" d="M12 2C7.58 2 4 5.58 4 10c0 5.25 6.72 11.34 7.15 11.72a1.25 1.25 0 0 0 1.7 0C13.28 21.34 20 15.25 20 10c0-4.42-3.58-8-8-8z"></path><circle cx="12" cy="10" r="3.3" fill="#ffffff"></circle></svg>`;
 
@@ -506,9 +582,32 @@ let CONFIG = null;
 
 init();
 
+/* Oculta el QR girando con un fundido suave. La tarjeta de atrás ya tiene
+ * el contenido final listo en ese momento (formulario o error). */
+function ocultarLoader() {
+  const loader = document.getElementById("loaderOverlay");
+  if (loader) loader.classList.add("oculto");
+}
+
+/* Ejecuta `mostrarContenido` respetando el tiempo mínimo del loader: si la
+ * config tardó menos de LOADER_MINIMO_MS, espera lo que falte antes de
+ * ocultar el QR y revelar el resultado (formulario o error). */
+function finalizarCarga(inicioCarga, mostrarContenido) {
+  const transcurrido = Date.now() - inicioCarga;
+  const faltante = Math.max(0, LOADER_MINIMO_MS - transcurrido);
+  setTimeout(() => {
+    mostrarContenido();
+    ocultarLoader();
+  }, faltante);
+}
+
 async function init() {
+  const inicioCarga = Date.now();
+
   if (!punto || punto < 1) {
-    contenido.innerHTML = `<p>Este código QR no es válido. Avisá a un organizador.</p>`;
+    finalizarCarga(inicioCarga, () => {
+      contenido.innerHTML = `<p>Este código QR no es válido. Avisá a un organizador.</p>`;
+    });
     return;
   }
 
@@ -519,14 +618,18 @@ async function init() {
     CONFIG = data;
 
     if (punto > CONFIG.totalPuntos) {
-      contenido.innerHTML = `<p>Este código QR no es válido. Avisá a un organizador.</p>`;
+      finalizarCarga(inicioCarga, () => {
+        contenido.innerHTML = `<p>Este código QR no es válido. Avisá a un organizador.</p>`;
+      });
       return;
     }
 
-    renderFormulario();
+    finalizarCarga(inicioCarga, renderFormulario);
   } catch (err) {
-    contenido.innerHTML = `<p class="error-carga">No se pudo conectar con el servidor.\n\n${escapeHtml(err.message)}</p>
-      <button type="button" class="boton-secundario" onclick="location.reload()">Reintentar</button>`;
+    finalizarCarga(inicioCarga, () => {
+      contenido.innerHTML = `<p class="error-carga">No se pudo conectar con el servidor.\n\n${escapeHtml(err.message)}</p>
+        <button type="button" class="boton-secundario" onclick="location.reload()">Reintentar</button>`;
+    });
   }
 }
 
